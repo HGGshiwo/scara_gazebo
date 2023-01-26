@@ -1,0 +1,38 @@
+<launch>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find agv_gazebo)/world/agv.world"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+  <node name="spawn_cylinder1"  pkg="gazebo_ros"  type="spawn_model" 
+    args="-file $(find agv_gazebo)/urdf/cylinder.urdf -urdf -model cylinder1 -x 1.5" 
+    output="screen" />
+
+  <node name="spawn_cylinder2"  pkg="gazebo_ros"  type="spawn_model" 
+    args="-file $(find agv_gazebo)/urdf/cylinder.urdf -urdf -model cylinder2 -x 4.5" 
+    output="screen" />
+    <!-- spawn the scara robot in gazebo -->
+  <node name="spawn_scara1" pkg="gazebo_ros" type="spawn_model" 
+    args="-file $(find scara_gazebo)/urdf/scara_robot.urdf -urdf -model scara_robot1
+    -J scara_robot_left::rotation1 -0.78
+    -J scara_robot_left::rotation2 2.1" />  
+  
+  <node name="spawn_scara2" pkg="gazebo_ros" type="spawn_model" 
+    args="-file $(find scara_gazebo)/urdf/scara_robot.urdf -urdf -model scara_robot2
+    -x 3
+    -y 0
+    -J scara_robot_left::rotation1 -0.78
+    -J scara_robot_left::rotation2 2.1" />
+  
+  <node name="scara_controller1" pkg="scara_gazebo" type="scara_controller.py" 
+    args="-cn scara_controller1 -rn scara_robot1 -rpx 0 -rpy 0 -rpz 0 
+          -spx 1.5 -spy 0 -spz 0 -epx 0 -epy 1.5 -epz 0 -r1p -0.78 -r2p 2.1"/>
+  
+  <node name="scara_controller2" pkg="scara_gazebo" type="scara_controller.py" 
+    args="-cn scara_controller2 -rn scara_robot2 -rpx 3 -rpy 0 -rpz 0
+          -spx 4.5 -spy 0 -spz 0 -epx 3 -epy 1.5 -epz 0 -r1p -0.78 -r2p 2.1"/>
+</launch>
