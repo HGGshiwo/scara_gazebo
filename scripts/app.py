@@ -60,6 +60,7 @@ class App(ScaraInterface):
 
     def wait(self):
         pass
+        pass
 
     def schedule_done(self, msg):
         """
