@@ -9,14 +9,6 @@ from geometry_msgs.msg import Pose, Point
 from std_msgs.msg import String
 from enum import IntEnum
 
-# config = {
-#     "scara_robot1": {
-#                 "robot_pose": Pose(position=Point(0,0,0)), 
-#                 "r1_pose": Pose(position=Point(1.5,0,0)), 
-#                 "r2_pose": Pose(position=Point(0,1.5,0))
-#             }
-# }
-
 # '{"car_id":"001","arm_id":"scara_robot1","cargo_id":"001","destination":1}'
 
 class state(IntEnum):
@@ -113,17 +105,17 @@ if __name__ == "__main__":
     parser.add_argument('-rpy', type=float, default="0.0", help="robot_pose.position.y")
     parser.add_argument('-rpz', type=float, default="0.0", help="robot_pose.position.z")
     parser.add_argument('-spx', type=float, default="0.0", help="start_pose.position.x")
-    parser.add_argument('-spy', type=float, default="1.5", help="start_pose.position.y")
+    parser.add_argument('-spy', type=float, default="0.0", help="start_pose.position.y")
     parser.add_argument('-spz', type=float, default="0.0", help="start_pose.position.z")
-    parser.add_argument('-epx', type=float, default="1.5", help="end_pose.position.x")
+    parser.add_argument('-epx', type=float, default="0.0", help="end_pose.position.x")
     parser.add_argument('-epy', type=float, default="0.0", help="robot_pose.position.y")
     parser.add_argument('-epz', type=float, default="0.0", help="robot_pose.position.z")
-    parser.add_argument('-r1p', type=float, default="-0.78", help="rotation1_joint init angle")
-    parser.add_argument('-r2p', type=float, default="2.1", help="rotation2_joint init angle")
+    parser.add_argument('-r1p', type=float, default="0.0", help="rotation1_joint init angle")
+    parser.add_argument('-r2p', type=float, default="0.0", help="rotation2_joint init angle")
     
     myargv = rospy.myargv()
     args = parser.parse_args(myargv[1:])
-
+    
     app = \
         App(
             controller_name=args.cn, 
@@ -134,5 +126,7 @@ if __name__ == "__main__":
             r1_pose=args.r1p,
             r2_pose=args.r2p
         )
+    
+    rospy.logdebug(app.start_pose.position.x)
     rospy.Subscriber("schedule_done", String, app.schedule_done)
     rospy.spin() # 这里是阻塞函数，等待callback被调用

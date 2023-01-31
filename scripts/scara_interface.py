@@ -51,8 +51,8 @@ class ScaraInterface:
         Input  pose - 移动的目标
         """
         # 计算相对坐标, 不清楚两个为什么是反着减
-        x = self.robot_pose.position.x - pose.position.x
-        y = self.robot_pose.position.y - pose.position.y
+        y = self.robot_pose.position.x - pose.position.x
+        x = self.robot_pose.position.y - pose.position.y
         dist_square = x*x + y*y # 目标到机器人中心的距离平方
         # 余弦定理计算出两个joint的转动角度, scara和中心连接的手臂长度为1, 另一个手臂长度为0.8
         angles = [
