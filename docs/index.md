@@ -48,8 +48,10 @@ app触发事件时会传递参数，订阅该事件的app回调函数可以得�
 通过python的```dist```进行构建，并通过```json```包转为String。例如:
 
 ```python
-msg = {"id": "001", "distination":1} 
-msg = json.dumps(msg)
+data = {"id": "001", "distination":1} 
+data = json.dumps(data)
+msg = String()
+msg.data = data
 ```
 
 ### 3.1.3 参数获取
@@ -57,8 +59,9 @@ msg = json.dumps(msg)
 通过```json```包将String转为```dist```，例如获取id
 
 ```python
-msg = json.loads(msg)
-id = msg["id"] # 在构建消息时也可以使用 msg["id"] = id 进行构建
+data = msg.data
+data = json.loads(data)
+id = data["id"] # 在构建消息时也可以使用 msg["id"] = id 进行构建
 ```
 
 ### 3.2 事件
@@ -83,7 +86,7 @@ id = msg["id"] # 在构建消息时也可以使用 msg["id"] = id 进行构建
 {
 	"id": "001",
     "destination": 1,
-    "start_point": 0,
+    "start_point": 0
 }
 ```
 
@@ -106,10 +109,10 @@ scheduler完成了调度，确定了哪一辆小车运送
 
 ```json
 {
-	"car_id": "001",
-    "arm_id": "002",
+	"car_id": "agv_car1",
+    "arm_id": "scara_robot1",
     "cargo_id": "001",
-    "destination": 1,
+    "destination": 1
 }
 ```
 
@@ -129,7 +132,7 @@ scheduler完成了调度，确定了哪一辆小车运送
 
 ```json
 {
-	"arm_id": "001",
+	"arm_id": "scara_robot1"
 }
 ```
 
@@ -150,7 +153,7 @@ scheduler完成了调度，确定了哪一辆小车运送
 
 ```json
 {
-	"car_id": "001",
+	"car_id": "scara_robot1"
 }
 ```
 
@@ -170,7 +173,7 @@ scheduler完成了调度，确定了哪一辆小车运送
 
 ```json
 {
-	"car_id": "001",
+	"car_id": "agv_car1"
 }
 ```
 
@@ -190,7 +193,7 @@ scheduler完成了调度，确定了哪一辆小车运送
 
 ```json
 {
-	"arm_id": "001",
+	"arm_id": "scara_robot1"
 }
 ```
 
@@ -210,7 +213,7 @@ scheduler完成了调度，确定了哪一辆小车运送
 
 ```json
 {
-	"arm_id": "001",
+	"arm_id": "scara_robot1"
 }
 ```
 
@@ -304,7 +307,7 @@ def __init__(self, controller_name, robot_name, robot_pose, r1_pose, r2_pose):
 |```release()```    |release the gripper|
 |```update()```     |update joint position and velocity, should be called in main  loop |
 
-举个例子，比如说我需要开发arm的app，那么首先继承```ArmInterface```，然后在对应的事件中添加回调函数。比如arm需要在schedule_done的时候移动到start_pose，那么需要实现这个函数。具体如何移动，需要调用```self.move_to(pose)```
+举个例子，比如说我需要开发arm的app，那么首先继承```ScaraInterface```，然后在对应的事件中添加回调函数。具体来说，arm需要在schedule_done的时候移动到start_pose，因此需要实现schedule_doen事件的回调函数。移动的方式是调用```self.move_to(pose)```
 
 ```python
 #! /usr/bin/env python
@@ -317,32 +320,91 @@ from geometry_msgs.msg import Pose, Point
 from std_msgs.msg import String
 from enum import IntEnum
 
-config = {
-    "001": {"robot_pose": Pose(), "r1_pose": Pose(), "r2_pose": Pose()}
-}
-
 class App(ScaraInterface):
-    def __init__(self, controller_name, robot_name):
-
-        ScaraInterface.__init__(controller_name, robot_name, robot_pose, r1_pose, r2_pose)
-        self.publisher = rospy.Publisher("load_done", String)
+    def __init__(self, controller_name, robot_name, robot_pose, start_pose, end_pose, r1_pose, r2_pose):
+        ScaraInterface.__init__(self, controller_name, robot_name, robot_pose, r1_pose, r2_pose)
         
-    def schedule_done(self, data):
+        self.start_pose = start_pose
+        self.end_pose = end_pose
+        
+        self.publisher = rospy.Publisher("load_done", String, queue_size=10)
+        
+        self.car_arrive = True # 小车是否到
+        self.target_loop_num = 0 # 目标循环次数
+        self.cur_loop_num = 0 # 计算循环次数 
+        self.cur_state = state.wait1 # 当前的状态
+        self.cur_action = self.wait # 当前状态执行的函数
+        self.time_unit = 0.01 # 每次循环的时间单位
+
+        self.func_tbl = {
+            state.wait1: (state.move1, self.move1     , 1.50),
+            state.move1:   (state.down1, self.move_down , 0.25),
+            state.down1:   (state.grasp, self.grasp     , 0.05),
+            state.grasp:  (state.up1  , self.move_up   , 0.25),
+            state.up1:    (state.move2 , self.move2,     1.50),
+            state.move2:  (state.wait2, self.wait    , 0.00),
+            state.wait2:  (state.down2 , self.move_down, 0.25),
+            state.down2:  (state.release, self.release , 0.05),
+            state.release: (state.up2   , self.move_up  , 0.25),
+            state.up2:     (state.wait1   , self.wait  , 0.25),
+        }
+
+    def move1(self):
+        self.move_to(self.start_pose)
+        
+    def move2(self):
+        self.move_to(self.end_pose)
+
+    def schedule_done(self, msg):
         """
         定义回调函数, 在schedule_done的时候调用 
         """
+        data = msg.data
+        rospy.loginfo(data)
         data = json.loads(data)
+        
         if data["arm_id"] != self.robot_name:
             return
-		# 机械臂搬运
-        # ...
+        rospy.loginfo(data["arm_id"])
+        while not rospy.is_shutdown():
+            rospy.loginfo(self.cur_state)
+            if self.cur_state == state.wait1:
+                if not self.car_arrive:
+                    continue
+                else:
+                    self.car_arrive = False
+            if self.cur_loop_num == self.target_loop_num: # 到达该状态的循环次数，则更新状态
+                self.cur_state, self.cur_action, time_cost = self.func_tbl[self.cur_state]
+                self.target_loop_num = time_cost//self.time_unit
+                self.cur_loop_num = 0
+            else:
+                self.cur_action()
+                self.cur_loop_num += 1
+            
+            self.update()
+
+            rospy.sleep(self.time_unit)
+
+
         # 发布一条信息，表示机械臂完成了搬运
         msg = {"arm_id": self.robot_name}
         msg = json.dumps(msg)
         self.publisher.publish(msg)
         
 if __name__ == "__main__":
-    app = App("controller", "scara_robot1")
+    # 添加一些参数
+    app = \
+        App(
+            controller_name=args.cn, 
+            robot_name=args.rn, 
+            robot_pose=Pose(position=Point(args.rpx, args.rpy, args.rpz)),
+            start_pose=Pose(position=Point(args.spx, args.spy, args.spz)),
+            end_pose=Pose(position=Point(args.epx, args.epy, args.epz)),
+            r1_pose=args.r1p,
+            r2_pose=args.r2p
+        )
+    
+    rospy.logdebug(app.start_pose.position.x)
     rospy.Subscriber("schedule_done", String, app.schedule_done)
     rospy.spin() # 这里是阻塞函数，等待callback被调用
 ```
