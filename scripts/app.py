@@ -57,6 +57,7 @@ class App(ScaraInterface):
             state.wait2:  (state.down2 , self.move_down, 0.25),
             state.down2:  (state.release, self.release , 0.05),
             state.release: (state.up2   , self.move_up  , 0.25),
+            state.up2:     (state.wait1   , self.wait  , 0.25),
         }
 
     def move1(self):
