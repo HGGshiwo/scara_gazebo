@@ -279,6 +279,10 @@ scheduler完成了调度，确定了哪一辆小车运送
 - 所有小车的状态，是否是ready
 - 所有task状态，包括该次运输任务的小车，目的地，是否完成等等
 
+#### 3.3.5 env_app
+
+生成模型，并且发布一条schedule_done的消息
+
 ## interface 描述
 
 ### 1 ```ArmInterface```
@@ -411,3 +415,22 @@ if __name__ == "__main__":
 
 更加具体的如何发布事件(就是topic)和注册事件的回调函数可以看：[https://blog.csdn.net/zlb_zlb/article/details/103444360](https://blog.csdn.net/zlb_zlb/article/details/103444360)
 
+## 开发进度安排
+
+|时间|目标|
+|-|-|
+|2.1|安装开发环境|
+|2.2, 2.3, 2.4, 2.5|实际开发|
+|2.6, 2,7|联调|
+
+## 分工
+|内容|开发者|
+|-|-|
+|scheduler|宋金翰|
+|arm      |王文斌|
+|car/charge|张秉文|
+|car/move  |马川淇|    
+|env       |梁馨如|
+
+## todo
+1. 充电桩
