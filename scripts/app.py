@@ -32,24 +32,25 @@ class App(ScaraInterface):
         
         self.publisher = rospy.Publisher("load_done", String, queue_size=10)
         
-        self.car_arrive = True # 小车是否到
-        self.target_loop_num = 0 # 目标循环次数
+        self.car_arrive = False # 小车是否到
+        self.schedule_done = False # 是否调度完成
+        self.target_loop_num = 1 # 目标循环次数
         self.cur_loop_num = 0 # 计算循环次数 
         self.cur_state = state.wait1 # 当前的状态
-        self.cur_action = self.wait # 当前状态执行的函数
+        self.cur_action = self.wait1 # 当前状态执行的函数
         self.time_unit = 0.01 # 每次循环的时间单位
 
         self.func_tbl = {
-            state.wait1: (state.move1, self.move1     , 1.50),
-            state.move1:   (state.down1, self.move_down , 0.25),
-            state.down1:   (state.grasp, self.grasp     , 0.05),
-            state.grasp:  (state.up1  , self.move_up   , 0.25),
-            state.up1:    (state.move2 , self.move2,     1.50),
-            state.move2:  (state.wait2, self.wait    , 0.00),
-            state.wait2:  (state.down2 , self.move_down, 0.25),
-            state.down2:  (state.release, self.release , 0.05),
-            state.release: (state.up2   , self.move_up  , 0.25),
-            state.up2:     (state.wait1   , self.wait  , 0.25),
+            state.wait1: (state.move1, self.move1    ,150),
+            state.move1: (state.down1, self.move_down, 25),
+            state.down1: (state.grasp, self.grasp    ,  5),
+            state.grasp: (state.up1  , self.move_up  , 25),
+            state.up1:   (state.move2, self.move2    ,150),
+            state.move2: (state.wait2, self.wait2     ,  1),
+            state.wait2: (state.down2, self.move_down, 25),
+            state.down2: (state.release,self.release ,  5),
+            state.release: (state.up2, self.up2      , 25),
+            state.up2:   (state.wait1, self.wait1     , 1),
         }
 
     def move1(self):
@@ -58,10 +59,30 @@ class App(ScaraInterface):
     def move2(self):
         self.move_to(self.end_pose)
 
-    def wait(self):
-        pass
+    def wait1(self):
+        if self.schedule_done:
+            self.cargo_arrive = False
+            self.cur_loop_num = 0
+        else:
+            self.cur_loop_num -= 1
 
-    def schedule_done(self, msg):
+    def wait2(self):
+        if self.car_arrive:
+            self.car_arrive = False
+            self.cur_loop_num = 0
+        else:
+            self.cur_loop_num -= 1
+
+    def up2(self):
+        self.move_up()
+
+        if self.cur_loop_num == 0:
+            # 发布一条信息，表示机械臂完成了搬运
+            msg = {"arm_id": self.robot_name}
+            msg = json.dumps(msg)
+            self.publisher.publish(msg)
+    
+    def schedule_done_callback(self, msg):
         """
         定义回调函数, 在schedule_done的时候调用 
         """
@@ -71,17 +92,13 @@ class App(ScaraInterface):
         
         if data["arm_id"] != self.robot_name:
             return
-        rospy.loginfo(data["arm_id"])
+        self.schedule_done = True
+
+    def run(self):
         while not rospy.is_shutdown():
             rospy.loginfo(self.cur_state)
-            if self.cur_state == state.wait1:
-                if not self.car_arrive:
-                    continue
-                else:
-                    self.car_arrive = False
             if self.cur_loop_num == self.target_loop_num: # 到达该状态的循环次数，则更新状态
-                self.cur_state, self.cur_action, time_cost = self.func_tbl[self.cur_state]
-                self.target_loop_num = time_cost//self.time_unit
+                self.cur_state, self.cur_action, self.target_loop_num = self.func_tbl[self.cur_state]
                 self.cur_loop_num = 0
             else:
                 self.cur_action()
@@ -92,11 +109,6 @@ class App(ScaraInterface):
             rospy.sleep(self.time_unit)
 
 
-        # 发布一条信息，表示机械臂完成了搬运
-        msg = {"arm_id": self.robot_name}
-        msg = json.dumps(msg)
-        self.publisher.publish(msg)
-        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='argparse for scara_controller')
     parser.add_argument('-cn', type=str, default="scara_controller", help="name of the controller node")
@@ -128,5 +140,5 @@ if __name__ == "__main__":
         )
     
     rospy.logdebug(app.start_pose.position.x)
-    rospy.Subscriber("schedule_done", String, app.schedule_done)
-    rospy.spin() # 这里是阻塞函数，等待callback被调用
+    rospy.Subscriber("schedule_done", String, app.schedule_done_callback)
+    app.run()

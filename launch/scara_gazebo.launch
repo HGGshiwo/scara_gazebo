@@ -12,21 +12,21 @@
     args="-file $(find scara_gazebo)/urdf/cylinder.urdf -urdf -model cylinder1 -x 1.5" 
     output="screen" />
 
-  <node name="spawn_cylinder2"  pkg="gazebo_ros"  type="spawn_model" 
+  <!-- <node name="spawn_cylinder2"  pkg="gazebo_ros"  type="spawn_model" 
     args="-file $(find scara_gazebo)/urdf/cylinder.urdf -urdf -model cylinder2 -x 4.5" 
-    output="screen" />
+    output="screen" /> -->
     <!-- spawn the scara robot in gazebo -->
   <node name="spawn_scara1" pkg="gazebo_ros" type="spawn_model" 
     args="-file $(find scara_gazebo)/urdf/scara_robot.urdf -urdf -model scara_robot1"/>  
   
-  <node name="spawn_scara2" pkg="gazebo_ros" type="spawn_model" 
-    args="-file $(find scara_gazebo)/urdf/scara_robot.urdf -urdf -model scara_robot2 -x 3 -y 0"/>
+  <!-- <node name="spawn_scara2" pkg="gazebo_ros" type="spawn_model" 
+    args="-file $(find scara_gazebo)/urdf/scara_robot.urdf -urdf -model scara_robot2 -x 3 -y 0"/> -->
   
   <node name="scara_controller1" pkg="scara_gazebo" type="app.py" 
     args="-cn scara_controller1 -rn scara_robot1 -rpx 0 -rpy 0 -rpz 0 
           -spx 1.5 -spy 0 -spz 0 -epx 0 -epy 1.5 -epz 0"/>
   
-  <node name="scara_controller2" pkg="scara_gazebo" type="scara_controller.py" 
+  <!-- <node name="scara_controller2" pkg="scara_gazebo" type="scara_controller.py" 
     args="-cn scara_controller2 -rn scara_robot2 -rpx 3 -rpy 0 -rpz 0
-          -spx 4.5 -spy 0 -spz 0 -epx 3 -epy 1.5 -epz 0"/>
+          -spx 4.5 -spy 0 -spz 0 -epx 3 -epy 1.5 -epz 0"/> -->
 </launch>
