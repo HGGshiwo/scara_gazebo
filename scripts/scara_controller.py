@@ -3,7 +3,6 @@
 import rospy
 import argparse
 from enum import IntEnum
-from scara_gazebo.msg import Poses
 from geometry_msgs.msg import Pose, Point
 from scara_interface import ScaraInterface
 
@@ -58,17 +57,15 @@ class ScaraController(ScaraInterface):
             (state.waiting   , self.wait      , 0.00),
         ]
         
-        # 订阅位置信息，注册回调
-        rospy.Subscriber('/rfid_tags', Poses, self.callback)
 
     def wait(self):
         pass
 
     def move_forth(self):
-        self.move_to(self.end_pose)
+        self.move_to(self.start_pose)
 
     def move_back(self):
-        self.move_to(self.start_pose)
+        self.move_to(self.end_pose)
         
     def callback(self, poses):
         for pose in poses:

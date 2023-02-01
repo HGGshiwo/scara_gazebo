@@ -283,33 +283,113 @@ scheduler完成了调度，确定了哪一辆小车运送
 
 生成模型，并且发布一条schedule_done的消息
 
-## interface 描述
+## 4. interface 说明
 
-### 1 ```ArmInterface```
+### 4.1 ```ScaraInterface```
 
 构造函数:
 
 ```python
-def __init__(self, controller_name, robot_name, robot_pose, r1_pose, r2_pose):
-        """
-        创建scara控制器
+ScaraInterface(controller_name, robot_name, robot_pose, r1_pose, r2_pose):
+    """
+    创建scara控制器
 
-        Input:  controller_name - 控制器节点名称
-                robot_name - 控制器对应的机械臂名称
-                robot_pose - scara机械臂所在位置
-                r1_pose    - rotation1的初始位置
-                r2_pose    - rotation2的初始位置    
-        """
+    Input:  controller_name - 控制器节点名称
+            robot_name - 控制器对应的机械臂名称
+            robot_pose - scara机械臂所在位置
+            r1_pose    - rotation1的初始位置
+            r2_pose    - rotation2的初始位置    
+    """
 ```
 
-|class method       |description|
-|-                  |-|
-|```move_to(pose)```|move the gripper to the given pose|
-|```move_up()```    |move the gripper up|
-|```move_down()```  |move the gripper down|
-|```grasp()```      |grasp the gripper|
-|```release()```    |release the gripper|
-|```update()```     |update joint position and velocity, should be called in main  loop |
+#### 4.1.1 ```move_to(pose)```
+
+功能：计算机械臂需要的力并且发布
+
+输入：
+- pose: Pose, 表示机械臂末端运动的目的地，可以通过Pose(position=Point(x,y,z))来构造
+
+#### 4.1.2 ```move_up()```
+
+功能：调整机械臂为上升状态，注意如果不调用update()就无法发布力，机械臂末端会掉下来
+
+#### 4.1.3 ```move_down()```
+
+功能：调整机械臂为下降状态
+
+#### 4.1.4 ```grasp()```
+
+功能：调整机械臂为抓紧状态，注意如果不同时调用update()就无法发布力，机械臂无法维持该状态
+
+#### 4.1.5 ```release()```
+
+功能：调整机械臂为松弛状态
+
+#### 4.1.6 ```update()```
+
+功能：发布机械臂上升和夹具抓紧的力。推荐的使用方法是在循环中首先调用grasp()以及move_up()，最后调用update()，实现机械臂抓紧+上升状态。
+
+### 4.2 ```CarInterface```
+
+### 4.3 ```SchedulerInterface```
+
+构造函数：
+
+```python
+SchedulerInterface(scheduler_name):
+    """
+    构造函数
+
+    Input:  scheduler_name - string, 调度器名称
+    """
+```
+
+### 4.4 ```EnvInterface```
+
+构造函数:
+
+```python
+EnvInterface(interface_name):
+    """
+    构造函数
+
+    Input:  interface_name - 接口的名称
+    """
+```
+
+### 4.4.1 ```spawn_model```
+
+功能: 在gzebo中生成一个模型
+
+输入:
+- model_name: string, 模型的名称
+- model_xml: string, 模型文件
+- name_space: string, 命名空间
+- pose: Pose, 生成的位置，可以通过Pose(position=Point(x,y,z))来构造
+
+## 5. 开发进度安排
+
+|时间|目标|
+|-|-|
+|2.1|安装开发环境|
+|2.2, 2.3, 2.4, 2.5|实际开发|
+|2.6, 2,7|联调|
+
+## 6. 分工
+
+|内容|开发者|
+|-|-|
+|scheduler|宋金翰|
+|arm      |王文斌|
+|car/charge|张秉文|
+|car/move  |马川淇|    
+|env       |梁馨如|
+|创新点|邹宇晗，何科霖，余泓澳|
+
+## todo
+1. 充电桩
+
+## 开发例子
 
 举个例子，比如说我需要开发arm的app，那么首先继承```ScaraInterface```，然后在对应的事件中添加回调函数。具体来说，arm需要在schedule_done的时候移动到start_pose，因此需要实现schedule_doen事件的回调函数。移动的方式是调用```self.move_to(pose)```
 
@@ -414,24 +494,3 @@ if __name__ == "__main__":
 ```
 
 更加具体的如何发布事件(就是topic)和注册事件的回调函数可以看：[https://blog.csdn.net/zlb_zlb/article/details/103444360](https://blog.csdn.net/zlb_zlb/article/details/103444360)
-
-## 开发进度安排
-
-|时间|目标|
-|-|-|
-|2.1|安装开发环境|
-|2.2, 2.3, 2.4, 2.5|实际开发|
-|2.6, 2,7|联调|
-
-## 分工
-
-|内容|开发者|
-|-|-|
-|scheduler|宋金翰|
-|arm      |王文斌|
-|car/charge|张秉文|
-|car/move  |马川淇|    
-|env       |梁馨如|
-
-## todo
-1. 充电桩
