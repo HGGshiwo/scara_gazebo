@@ -12,7 +12,7 @@ from enum import IntEnum
 # '{"car_id":"001","arm_id":"scara_robot1","cargo_id":"001","destination":1}'
 
 class state(IntEnum):
-    wait1 = 0
+    wait = 0
     move1 = 1
     down1 = 2
     grasp = 3
@@ -30,27 +30,26 @@ class App(ScaraInterface):
         self.start_pose = start_pose
         self.end_pose = end_pose
         
-        self.publisher = rospy.Publisher("load_done", String, queue_size=10)
+        self.arm_up_publisher = rospy.Publisher("arm_up", String, queue_size=10)
         
-        self.car_arrive = False # 小车是否到
-        self.schedule_done = False # 是否调度完成
         self.target_loop_num = 1 # 目标循环次数
         self.cur_loop_num = 0 # 计算循环次数 
-        self.cur_state = state.wait1 # 当前的状态
-        self.cur_action = self.wait1 # 当前状态执行的函数
+        self.cur_state = state.wait # 当前的状态
+        self.cur_action = self.wait # 当前状态执行的函数
         self.time_unit = 0.01 # 每次循环的时间单位
 
+        self.car_arrive = False # 小车是否到达
+
         self.func_tbl = {
-            state.wait1: (state.move1, self.move1    ,150),
+            state.wait: (state.move1, self.move1    ,150),
             state.move1: (state.down1, self.move_down, 25),
             state.down1: (state.grasp, self.grasp    ,  5),
             state.grasp: (state.up1  , self.move_up  , 25),
             state.up1:   (state.move2, self.move2    ,150),
-            state.move2: (state.wait2, self.wait2     ,  1),
-            state.wait2: (state.down2, self.move_down, 25),
+            state.move2: (state.down2, self.move_down,  25),
             state.down2: (state.release,self.release ,  5),
             state.release: (state.up2, self.up2      , 25),
-            state.up2:   (state.wait1, self.wait1     , 1),
+            state.up2:   (state.wait, self.wait     , 1),
         }
 
     def move1(self):
@@ -59,14 +58,7 @@ class App(ScaraInterface):
     def move2(self):
         self.move_to(self.end_pose)
 
-    def wait1(self):
-        if self.schedule_done:
-            self.cargo_arrive = False
-            self.cur_loop_num = 0
-        else:
-            self.cur_loop_num -= 1
-
-    def wait2(self):
+    def wait(self):
         if self.car_arrive:
             self.car_arrive = False
             self.cur_loop_num = 0
@@ -75,16 +67,19 @@ class App(ScaraInterface):
 
     def up2(self):
         self.move_up()
-
         if self.cur_loop_num == 0:
             # 发布一条信息，表示机械臂完成了搬运
-            msg = {"arm_id": self.robot_name}
-            msg = json.dumps(msg)
-            self.publisher.publish(msg)
+            msg = String()
+            data = {}
+            data["arm_id"] = self.robot_name
+            data = json.dumps(data)
+            msg.data = data
+            self.arm_up_publisher.publish(msg)
+            rospy.loginfo(data)
     
-    def schedule_done_callback(self, msg):
+    def car_arrive_callback(self, msg):
         """
-        定义回调函数, 在schedule_done的时候调用 
+        定义回调函数, 在car_arrive的时候调用 
         """
         data = msg.data
         rospy.loginfo(data)
@@ -92,11 +87,11 @@ class App(ScaraInterface):
         
         if data["arm_id"] != self.robot_name:
             return
-        self.schedule_done = True
+        rospy.loginfo("car arrive")
+        self.car_arrive = True
 
     def run(self):
         while not rospy.is_shutdown():
-            rospy.loginfo(self.cur_state)
             if self.cur_loop_num == self.target_loop_num: # 到达该状态的循环次数，则更新状态
                 self.cur_state, self.cur_action, self.target_loop_num = self.func_tbl[self.cur_state]
                 self.cur_loop_num = 0
@@ -116,11 +111,11 @@ if __name__ == "__main__":
     parser.add_argument('-rpx', type=float, default="0.0", help="robot_pose.position.x")
     parser.add_argument('-rpy', type=float, default="0.0", help="robot_pose.position.y")
     parser.add_argument('-rpz', type=float, default="0.0", help="robot_pose.position.z")
-    parser.add_argument('-spx', type=float, default="0.0", help="start_pose.position.x")
+    parser.add_argument('-spx', type=float, default="1.5", help="start_pose.position.x")
     parser.add_argument('-spy', type=float, default="0.0", help="start_pose.position.y")
     parser.add_argument('-spz', type=float, default="0.0", help="start_pose.position.z")
     parser.add_argument('-epx', type=float, default="0.0", help="end_pose.position.x")
-    parser.add_argument('-epy', type=float, default="0.0", help="robot_pose.position.y")
+    parser.add_argument('-epy', type=float, default="1.5", help="robot_pose.position.y")
     parser.add_argument('-epz', type=float, default="0.0", help="robot_pose.position.z")
     parser.add_argument('-r1p', type=float, default="0.0", help="rotation1_joint init angle")
     parser.add_argument('-r2p', type=float, default="0.0", help="rotation2_joint init angle")
@@ -140,5 +135,6 @@ if __name__ == "__main__":
         )
     
     rospy.logdebug(app.start_pose.position.x)
-    rospy.Subscriber("schedule_done", String, app.schedule_done_callback)
+    rospy.Subscriber("car_arrive", String, app.car_arrive_callback)
+    rospy.loginfo("app start...")
     app.run()

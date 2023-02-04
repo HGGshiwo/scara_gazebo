@@ -125,7 +125,7 @@
   <child link="gripper_link"/>
   <origin xyz="0 0.8 0" rpy="0 0 0"/>
   <axis xyz="0 0 1"/>
-  <limit effort="100" velocity="100" lower="-0.15" upper="0.0"/>
+  <limit effort="100" velocity="100" lower="-0.15" upper="0.15"/>
 </joint>
 
 <link name="gripper_link">
