@@ -62,7 +62,6 @@ class ScaraInterface:
         ]     
          # 发布joint需要旋转的角度
         for i,name in enumerate(["rotation1", "rotation2"]):
-            rospy.loginfo("x: {}, y:{}".format(x,y))
             pose_err = angles[i] - self.joints[name].cur_pose
             effort = self.kps[i] * pose_err - self.kvs[i] * self.joints[name].cur_rate
             effort = round(effort, 4)

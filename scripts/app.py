@@ -38,7 +38,7 @@ class App(ScaraInterface):
         self.cur_action = self.wait # 当前状态执行的函数
         self.time_unit = 0.01 # 每次循环的时间单位
 
-        self.car_arrive = True # 小车是否到达
+        self.car_arrive = False # 小车是否到达
 
         self.func_tbl = {
             state.wait: (state.move1, self.move1     ,50),
