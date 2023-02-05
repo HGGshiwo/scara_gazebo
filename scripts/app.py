@@ -38,7 +38,7 @@ class App(ScaraInterface):
         self.cur_action = self.wait # 当前状态执行的函数
         self.time_unit = 0.01 # 每次循环的时间单位
 
-        self.car_arrive = False # 小车是否到达
+        self.car_arrive = True # 小车是否到达
 
         self.func_tbl = {
             state.wait: (state.move1, self.move1     ,50),
@@ -58,7 +58,7 @@ class App(ScaraInterface):
 
     def release(self):
         super().release()
-        if self.cur_loop_num == 0:
+        if self.cur_loop_num == 9:
             # 发布一条信息，表示机械臂完成了搬运
             msg = String()
             data = {}
@@ -98,6 +98,12 @@ class App(ScaraInterface):
         if data["arm_id"] != self.robot_name:
             return
         rospy.loginfo("car arrive")
+        if data["destination"] == 1:
+            self.start_pose.position.x = data["x"]
+            self.start_pose.position.y = data["y"]
+        elif data["destination"] == 2:
+            self.end_pose.position.x = data["x"]
+            self.end_pose.position.y = data["y"]
         self.car_arrive = True
 
     def run(self):
@@ -108,8 +114,10 @@ class App(ScaraInterface):
             else:
                 self.cur_action()
                 self.cur_loop_num += 1
-            
-            self.update()
+            try:
+                self.update()
+            except:
+                pass
 
             rospy.sleep(self.time_unit)
 

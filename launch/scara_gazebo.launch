@@ -22,8 +22,8 @@
   <!-- <node name="spawn_scara2" pkg="gazebo_ros" type="spawn_model" 
     args="-file $(find scara_gazebo)/urdf/scara_robot.urdf -urdf -model scara_robot2 -x 3 -y 0"/> -->
   
-  <node name="scara_controller1" pkg="scara_gazebo" type="app.py" 
-    args="-cn scara_controller1 -rn scara_robot1 -rpx 0 -rpy 0 -spx 1.5 -spy 0 -epx 0 -epy 1.5"/>
+  <!-- <node name="scara_controller1" pkg="scara_gazebo" type="app.py" 
+    args="-cn scara_controller1 -rn scara_robot1 -rpx 0 -rpy 0 -spx 1.5 -spy 0 -epx 0 -epy 1.5"/> -->
   
   <!-- <node name="scara_controller2" pkg="scara_gazebo" type="scara_controller.py" 
     args="-cn scara_controller2 -rn scara_robot2 -rpx 3 -rpy 0 -rpz 0
