@@ -50,18 +50,21 @@ class ScaraInterface:
 
         Input  pose - 移动的目标
         """
-        # 计算相对坐标, 不清楚两个为什么是反着减
+        # 计算相对坐标
         x = pose.position.x - self.robot_pose.position.x
         y = pose.position.y - self.robot_pose.position.y
+        rospy.loginfo("x: {}, y:{}".format(x, y))
         dist_square = x*x + y*y # 目标到机器人中心的距离平方
         # 余弦定理计算出两个joint的转动角度, scara和中心连接的手臂长度为1, 另一个手臂长度为0.8
         a = np.pi/2 if np.abs(y) <= 1e-4 else np.arctan(np.divide(x,y))
+        a = a if a >= 0 else np.pi + a # 角度为负时需要加pi
         angles = [
             -a + np.arccos((0.36 + dist_square)/(2*np.sqrt(dist_square))),
             -np.pi + np.arccos((1.64 - dist_square)/1.6)
         ]     
          # 发布joint需要旋转的角度
         for i,name in enumerate(["rotation1", "rotation2"]):
+            rospy.loginfo(a)
             pose_err = angles[i] - self.joints[name].cur_pose
             effort = self.kps[i] * pose_err - self.kvs[i] * self.joints[name].cur_rate
             effort = round(effort, 4)

@@ -43,7 +43,7 @@ class App(ScaraInterface):
         self.func_tbl = {
             state.wait: (state.move1, self.move1     ,50),
             state.move1: (state.down1, self.move_down, 10),
-            state.down1: (state.grasp, self.grasp    , 1),
+            state.down1: (state.grasp, self.grasp    , 10),
             state.grasp: (state.up1  , self.move_up  , 10),
             state.up1:   (state.move2, self.move2    ,50),
             state.move2: (state.release, self.release,10),
