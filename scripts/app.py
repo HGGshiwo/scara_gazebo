@@ -41,15 +41,13 @@ class App(ScaraInterface):
         self.car_arrive = False # 小车是否到达
 
         self.func_tbl = {
-            state.wait: (state.move1, self.move1    ,150),
-            state.move1: (state.down1, self.move_down, 25),
-            state.down1: (state.grasp, self.grasp    ,  5),
-            state.grasp: (state.up1  , self.move_up  , 25),
-            state.up1:   (state.move2, self.move2    ,150),
-            state.move2: (state.down2, self.move_down,  25),
-            state.down2: (state.release,self.release ,  5),
-            state.release: (state.up2, self.up2      , 25),
-            state.up2:   (state.wait, self.wait     , 1),
+            state.wait: (state.move1, self.move1     ,50),
+            state.move1: (state.down1, self.move_down, 10),
+            state.down1: (state.grasp, self.grasp    , 1),
+            state.grasp: (state.up1  , self.move_up  , 10),
+            state.up1:   (state.move2, self.move2    ,50),
+            state.move2: (state.release, self.release,10),
+            state.release: (state.wait, self.wait     ,1),
         }
 
     def move1(self):
@@ -57,6 +55,18 @@ class App(ScaraInterface):
         
     def move2(self):
         self.move_to(self.end_pose)
+
+    def release(self):
+        super().release()
+        if self.cur_loop_num == 0:
+            # 发布一条信息，表示机械臂完成了搬运
+            msg = String()
+            data = {}
+            data["arm_id"] = self.robot_name
+            data = json.dumps(data)
+            msg.data = data
+            self.arm_up_publisher.publish(msg)
+            rospy.loginfo(data)
 
     def wait(self):
         if self.car_arrive:
@@ -110,13 +120,10 @@ if __name__ == "__main__":
     parser.add_argument('-rn', type=str, default="scara_robot1", help="name of the robot")
     parser.add_argument('-rpx', type=float, default="0.0", help="robot_pose.position.x")
     parser.add_argument('-rpy', type=float, default="0.0", help="robot_pose.position.y")
-    parser.add_argument('-rpz', type=float, default="0.0", help="robot_pose.position.z")
     parser.add_argument('-spx', type=float, default="1.5", help="start_pose.position.x")
     parser.add_argument('-spy', type=float, default="0.0", help="start_pose.position.y")
-    parser.add_argument('-spz', type=float, default="0.0", help="start_pose.position.z")
     parser.add_argument('-epx', type=float, default="0.0", help="end_pose.position.x")
-    parser.add_argument('-epy', type=float, default="1.5", help="robot_pose.position.y")
-    parser.add_argument('-epz', type=float, default="0.0", help="robot_pose.position.z")
+    parser.add_argument('-epy', type=float, default="1.5", help="end_pose.position.y")
     parser.add_argument('-r1p', type=float, default="0.0", help="rotation1_joint init angle")
     parser.add_argument('-r2p', type=float, default="0.0", help="rotation2_joint init angle")
     
@@ -127,9 +134,9 @@ if __name__ == "__main__":
         App(
             controller_name=args.cn, 
             robot_name=args.rn, 
-            robot_pose=Pose(position=Point(args.rpx, args.rpy, args.rpz)),
-            start_pose=Pose(position=Point(args.spx, args.spy, args.spz)),
-            end_pose=Pose(position=Point(args.epx, args.epy, args.epz)),
+            robot_pose=Pose(position=Point(args.rpx, args.rpy, 0)),
+            start_pose=Pose(position=Point(args.spx, args.spy, 0)),
+            end_pose=Pose(position=Point(args.epx, args.epy, 0)),
             r1_pose=args.r1p,
             r2_pose=args.r2p
         )

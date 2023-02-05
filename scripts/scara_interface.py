@@ -19,8 +19,8 @@ class ScaraInterface:
         rospy.init_node(controller_name)
         
         # 关节控制的参数
-        self.kps = [80, 1]
-        self.kvs = [64, 0.21]
+        self.kps = [80, 0.8]
+        self.kvs = [64, 0.2]
         self.GRIPPER_UP_EFFORT = 0.001
         self.GRIPPER_DOWN_EFFORT = 0.0
         self.GRIPPER_GRASP_EFFORT = 0.002
@@ -67,7 +67,7 @@ class ScaraInterface:
         for i,name in enumerate(["rotation1", "rotation2"]):
             pose_err = angles[i] - self.joints[name].cur_pose
             effort = self.kps[i] * pose_err - self.kvs[i] * self.joints[name].cur_rate
-            rospy.loginfo(effort)
+            effort = round(effort, 4)
             self.joints[name].set_effort(effort)
             self.joints[name].publish()
 
