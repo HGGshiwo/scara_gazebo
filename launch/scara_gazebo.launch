@@ -9,7 +9,7 @@
   </include>
 
   <node name="spawn_cylinder1"  pkg="gazebo_ros"  type="spawn_model" 
-    args="-file $(find scara_gazebo)/urdf/cylinder.urdf -urdf -model cylinder1 -x 1.5" 
+    args="-file $(find scara_gazebo)/urdf/box.urdf -urdf -model cylinder1 -x 1.5" 
     output="screen" />
 
   <!-- <node name="spawn_cylinder2"  pkg="gazebo_ros"  type="spawn_model" 
